@@ -1,516 +1,470 @@
 import * as THREE from "https://unpkg.com/three@0.160.0/build/three.module.js";
 
-const canvas = document.getElementById("c");
+const canvas = document.getElementById("game");
 
 // UI
 const menu = document.getElementById("menu");
-const btnPlay = document.getElementById("btnPlay");
-const btnHow = document.getElementById("btnHow");
-const howPanel = document.getElementById("howPanel");
-
+const startBtn = document.getElementById("startBtn");
 const hud = document.getElementById("hud");
-const crosshair = document.getElementById("crosshair");
-const moneyEl = document.getElementById("money");
+const moneyText = document.getElementById("moneyText");
 
 const shop = document.getElementById("shop");
+const shopBtn = document.getElementById("shopBtn");
 const shopClose = document.getElementById("shopClose");
-const buyDropperBtn = document.getElementById("buyDropper");
-const buyConveyorBtn = document.getElementById("buyConveyor");
-const buyBonusBtn = document.getElementById("buyBonus");
-const buySpeedBtn = document.getElementById("buySpeed");
+const buySpeed = document.getElementById("buySpeed");
+const buyBoost = document.getElementById("buyBoost");
 
-// ---------- Helpers ----------
-function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
+const tip = document.getElementById("tip");
+const tipName = document.getElementById("tipName");
+const tipCost = document.getElementById("tipCost");
 
-function makeSmileyTexture() {
-  const c = document.createElement("canvas");
-  c.width = 256; c.height = 256;
-  const ctx = c.getContext("2d");
+function clamp(v, a, b){ return Math.max(a, Math.min(b, v)); }
 
-  // yellow head
-  ctx.fillStyle = "#ffd54a";
-  ctx.fillRect(0, 0, c.width, c.height);
-
-  // eyes + smile (Roblox-ish)
-  ctx.fillStyle = "#111";
-  ctx.beginPath(); ctx.arc(85, 100, 14, 0, Math.PI * 2); ctx.fill();
-  ctx.beginPath(); ctx.arc(171, 100, 14, 0, Math.PI * 2); ctx.fill();
-
-  ctx.strokeStyle = "#111";
-  ctx.lineWidth = 16;
-  ctx.lineCap = "round";
-  ctx.beginPath();
-  ctx.arc(128, 150, 58, 0.1 * Math.PI, 0.9 * Math.PI);
-  ctx.stroke();
-
-  const tex = new THREE.CanvasTexture(c);
-  tex.colorSpace = THREE.SRGBColorSpace;
-  tex.anisotropy = 4;
-  return tex;
-}
-
-// ---------- Three.js Setup ----------
-const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+// ---------- Three Setup ----------
+const renderer = new THREE.WebGLRenderer({ canvas, antialias:true });
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 renderer.setSize(innerWidth, innerHeight);
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x070a12);
+scene.background = new THREE.Color(0x9fd5ff); // bright sky-ish like screenshot
 
-const camera = new THREE.PerspectiveCamera(70, innerWidth / innerHeight, 0.1, 250);
-camera.position.set(0, 4.5, 10);
+const camera = new THREE.PerspectiveCamera(70, innerWidth/innerHeight, 0.1, 500);
 
-const ambient = new THREE.AmbientLight(0xffffff, 0.55);
-scene.add(ambient);
-
+// lights
+scene.add(new THREE.HemisphereLight(0xffffff, 0x445566, 0.85));
 const sun = new THREE.DirectionalLight(0xffffff, 1.0);
-sun.position.set(12, 22, 10);
-sun.castShadow = false;
+sun.position.set(30, 45, 20);
 scene.add(sun);
 
-const hemi = new THREE.HemisphereLight(0x9ad7ff, 0x2b2b2b, 0.55);
-scene.add(hemi);
-
-// Ground
+// ---------- World (flat base + trees + grid) ----------
 const ground = new THREE.Mesh(
-  new THREE.PlaneGeometry(200, 200),
-  new THREE.MeshStandardMaterial({ color: 0x0f1524, roughness: 0.95, metalness: 0.0 })
+  new THREE.PlaneGeometry(300, 300),
+  new THREE.MeshStandardMaterial({ color: 0x7cc06a, roughness: 1.0 })
 );
-ground.rotation.x = -Math.PI / 2;
-ground.position.y = 0;
+ground.rotation.x = -Math.PI/2;
 scene.add(ground);
 
-// Subtle grid
-const grid = new THREE.GridHelper(200, 80, 0x2b395a, 0x17233b);
-grid.position.y = 0.01;
+// tycoon plot grid like screenshot
+const plotSize = 70;
+const plot = new THREE.Mesh(
+  new THREE.PlaneGeometry(plotSize, plotSize),
+  new THREE.MeshStandardMaterial({ color: 0x6fbf6d, roughness: 1.0 })
+);
+plot.rotation.x = -Math.PI/2;
+plot.position.set(0, 0.02, 0);
+scene.add(plot);
+
+const grid = new THREE.GridHelper(plotSize, 20, 0x2b6e35, 0x2b6e35);
+grid.position.set(0, 0.03, 0);
 scene.add(grid);
 
-// ---------- Player (Roblox Noob) ----------
-const player = new THREE.Group();
-scene.add(player);
+// plot border
+const borderMat = new THREE.MeshStandardMaterial({ color: 0xa06a4d, roughness: 0.95 });
+function borderPiece(w,h,d,x,z){
+  const m = new THREE.Mesh(new THREE.BoxGeometry(w,h,d), borderMat);
+  m.position.set(x, h/2, z);
+  scene.add(m);
+}
+const bw = plotSize, bh = 1.2, bt = 2.2;
+borderPiece(bw+bt, bh, bt, 0, -plotSize/2 - bt/2);
+borderPiece(bw+bt, bh, bt, 0,  plotSize/2 + bt/2);
+borderPiece(bt, bh, bw, -plotSize/2 - bt/2, 0);
+borderPiece(bt, bh, bw,  plotSize/2 + bt/2, 0);
 
-const headTex = makeSmileyTexture();
-const matYellow = new THREE.MeshStandardMaterial({ color: 0xffd54a, roughness: 0.8 });
-const matBlue = new THREE.MeshStandardMaterial({ color: 0x2f6bff, roughness: 0.75 });
-const matGreen = new THREE.MeshStandardMaterial({ color: 0x2fd25a, roughness: 0.75 });
-
-const head = new THREE.Mesh(new THREE.BoxGeometry(1.1, 1.1, 1.1), new THREE.MeshStandardMaterial({ map: headTex, roughness: 0.75 }));
-head.position.set(0, 2.55, 0);
-
-const torso = new THREE.Mesh(new THREE.BoxGeometry(1.5, 1.6, 0.9), matBlue);
-torso.position.set(0, 1.55, 0);
-
-const armL = new THREE.Mesh(new THREE.BoxGeometry(0.55, 1.4, 0.55), matYellow);
-armL.position.set(-1.05, 1.55, 0);
-
-const armR = new THREE.Mesh(new THREE.BoxGeometry(0.55, 1.4, 0.55), matYellow);
-armR.position.set(1.05, 1.55, 0);
-
-const legL = new THREE.Mesh(new THREE.BoxGeometry(0.65, 1.4, 0.65), matGreen);
-legL.position.set(-0.45, 0.55, 0);
-
-const legR = new THREE.Mesh(new THREE.BoxGeometry(0.65, 1.4, 0.65), matGreen);
-legR.position.set(0.45, 0.55, 0);
-
-player.add(head, torso, armL, armR, legL, legR);
-player.position.set(0, 0, 8);
-
-// Camera rig (FPS-ish)
-let yaw = 0;
-let pitch = 0;
-
-const camRig = new THREE.Group();
-camRig.position.copy(player.position);
-scene.add(camRig);
-camRig.add(camera);
-camera.position.set(0, 2.6, 0); // first-person view height
-
-// ---------- Input / Pointer Lock ----------
-const keys = new Set();
-let running = false;
-let pointerLocked = false;
-
-window.addEventListener("keydown", (e) => {
-  keys.add(e.code);
-
-  if (e.code === "Tab") {
-    e.preventDefault();
-    if (running) toggleShop();
-  }
-});
-window.addEventListener("keyup", (e) => keys.delete(e.code));
-
-function requestLock() {
-  if (!pointerLocked) canvas.requestPointerLock();
+// simple lowpoly trees
+function makeTree(x,z){
+  const trunk = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.5,0.6,4,6),
+    new THREE.MeshStandardMaterial({ color: 0x6a3f2b, roughness: 1.0 })
+  );
+  trunk.position.set(x, 2, z);
+  const top = new THREE.Mesh(
+    new THREE.BoxGeometry(3.5,3.5,3.5),
+    new THREE.MeshStandardMaterial({ color: 0x2f7d3a, roughness: 1.0 })
+  );
+  top.position.set(x, 5.2, z);
+  scene.add(trunk, top);
+}
+for (let i=0;i<16;i++){
+  const x = (Math.random()*220)-110;
+  const z = (Math.random()*220)-110;
+  if (Math.abs(x) < plotSize/2 + 10 && Math.abs(z) < plotSize/2 + 10) continue;
+  makeTree(x,z);
 }
 
-document.addEventListener("pointerlockchange", () => {
-  pointerLocked = (document.pointerLockElement === canvas);
-  crosshair.classList.toggle("hidden", !pointerLocked);
-});
+// ---------- Roblox-style Noob ----------
+function makeSmileyTexture(){
+  const c = document.createElement("canvas");
+  c.width = 256; c.height = 256;
+  const ctx = c.getContext("2d");
 
-window.addEventListener("mousemove", (e) => {
-  if (!pointerLocked || !running) return;
-  const sens = 0.0022;
-  yaw -= e.movementX * sens;
-  pitch -= e.movementY * sens;
-  pitch = clamp(pitch, -1.1, 1.1);
-});
+  ctx.fillStyle = "#ffd54a";
+  ctx.fillRect(0,0,256,256);
 
-// Click canvas to lock
-canvas.addEventListener("mousedown", () => {
-  if (!running) return;
-  if (!shop.classList.contains("hidden")) return;
-  requestLock();
-});
+  ctx.fillStyle = "#111";
+  ctx.beginPath(); ctx.arc(92, 110, 14, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(164, 110, 14, 0, Math.PI*2); ctx.fill();
 
-// ---------- Tycoon World ----------
-const tycoon = {
-  money: 0,
-  dropperCount: 1,
-  coinValue: 1,
-  conveyorSpeed: 1.0,
-  moveSpeed: 7.0,
-  coins: [],
-  lastDrop: 0,
-  dropInterval: 0.65,
+  ctx.strokeStyle = "#111";
+  ctx.lineWidth = 16;
+  ctx.lineCap = "round";
+  ctx.beginPath();
+  ctx.arc(128, 150, 60, 0.15*Math.PI, 0.85*Math.PI);
+  ctx.stroke();
+
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
+const noob = new THREE.Group();
+scene.add(noob);
+
+const matYellow = new THREE.MeshStandardMaterial({ color: 0xffd54a, roughness: 0.9 });
+const matBlue   = new THREE.MeshStandardMaterial({ color: 0x2f6bff, roughness: 0.85 });
+const matGreen  = new THREE.MeshStandardMaterial({ color: 0x2fd25a, roughness: 0.85 });
+
+const head = new THREE.Mesh(
+  new THREE.BoxGeometry(1.15,1.15,1.15),
+  new THREE.MeshStandardMaterial({ map: makeSmileyTexture(), roughness: 0.85 })
+);
+head.position.set(0, 3.0, 0);
+
+const torso = new THREE.Mesh(new THREE.BoxGeometry(1.55, 1.7, 0.9), matBlue);
+torso.position.set(0, 1.95, 0);
+
+const armL = new THREE.Mesh(new THREE.BoxGeometry(0.55,1.55,0.55), matYellow);
+armL.position.set(-1.1, 1.95, 0);
+
+const armR = new THREE.Mesh(new THREE.BoxGeometry(0.55,1.55,0.55), matYellow);
+armR.position.set( 1.1, 1.95, 0);
+
+const legL = new THREE.Mesh(new THREE.BoxGeometry(0.7,1.6,0.7), matGreen);
+legL.position.set(-0.45, 0.8, 0);
+
+const legR = new THREE.Mesh(new THREE.BoxGeometry(0.7,1.6,0.7), matGreen);
+legR.position.set( 0.45, 0.8, 0);
+
+noob.add(head, torso, armL, armR, legL, legR);
+noob.position.set(-20, 0, 10);
+
+// ---------- Tycoon System ----------
+const state = {
+  running: false,
+  money: 150, // matches screenshot vibe
+  speed: 9,
+  incomeBoost: 0,
+  machinesBuilt: new Set(),
 };
 
-function setMoney(v) {
-  tycoon.money = Math.max(0, Math.floor(v));
-  moneyEl.textContent = tycoon.money.toString();
+function setMoney(v){
+  state.money = Math.max(0, Math.floor(v));
+  moneyText.textContent = `$${state.money}`;
 }
+setMoney(state.money);
 
-function canAfford(cost) { return tycoon.money >= cost; }
+// machines list (pads unlock these)
+const machineDefs = [
+  { id:"smallDropper",  name:"Small Dropper",    cost:0,   income: 5,  color:0x9cff57 },
+  { id:"conveyor",      name:"Conveyor Belt",    cost:50,  income: 0,  color:0x5ff4ff },
+  { id:"mediumDropper", name:"Medium Dropper",   cost:100, income: 12, color:0xa889ff },
+  { id:"refinery",      name:"Refinery",         cost:200, income: 25, color:0xff7d7d },
+  { id:"megaDropper",   name:"Mega Dropper",     cost:300, income: 40, color:0xffd24a },
+];
 
-function spend(cost) {
-  if (!canAfford(cost)) return false;
-  setMoney(tycoon.money - cost);
-  return true;
-}
-
-// Base platform
-const base = new THREE.Mesh(
-  new THREE.BoxGeometry(16, 0.8, 14),
-  new THREE.MeshStandardMaterial({ color: 0x111a2e, roughness: 0.85 })
-);
-base.position.set(0, 0.4, -8);
-scene.add(base);
-
-// Neon trims
-const trim = new THREE.Mesh(
-  new THREE.BoxGeometry(16.2, 0.12, 14.2),
-  new THREE.MeshStandardMaterial({ color: 0x0a152a, emissive: 0x2244ff, emissiveIntensity: 0.25 })
-);
-trim.position.set(0, 0.84, -8);
-scene.add(trim);
-
-// Dropper (spawns coins)
-const dropperGroup = new THREE.Group();
-dropperGroup.position.set(-5.4, 1.1, -12);
-scene.add(dropperGroup);
-
-const dropperBody = new THREE.Mesh(
-  new THREE.BoxGeometry(2.0, 2.0, 2.0),
-  new THREE.MeshStandardMaterial({ color: 0x1a2a4a, roughness: 0.75, metalness: 0.1 })
-);
-dropperBody.position.y = 1.0;
-
-const dropperNozzle = new THREE.Mesh(
-  new THREE.BoxGeometry(0.6, 0.6, 0.6),
-  new THREE.MeshStandardMaterial({ color: 0x33e6ff, emissive: 0x33e6ff, emissiveIntensity: 0.6, roughness: 0.4 })
-);
-dropperNozzle.position.set(0, 0.2, 1.1);
-
-dropperGroup.add(dropperBody, dropperNozzle);
-
-// Conveyor
-const conveyor = new THREE.Mesh(
-  new THREE.BoxGeometry(10.0, 0.35, 2.2),
-  new THREE.MeshStandardMaterial({ color: 0x1b2236, roughness: 0.95 })
-);
-conveyor.position.set(0.2, 1.0, -10.2);
-scene.add(conveyor);
-
-const conveyorGlow = new THREE.Mesh(
-  new THREE.BoxGeometry(10.0, 0.06, 2.2),
-  new THREE.MeshStandardMaterial({ color: 0x0b1224, emissive: 0x33e6ff, emissiveIntensity: 0.18 })
-);
-conveyorGlow.position.set(0.2, 1.2, -10.2);
-scene.add(conveyorGlow);
-
-// Collector
-const collector = new THREE.Mesh(
-  new THREE.BoxGeometry(2.8, 1.7, 2.8),
-  new THREE.MeshStandardMaterial({ color: 0x14213d, roughness: 0.7, metalness: 0.1 })
-);
-collector.position.set(5.8, 1.25, -10.2);
-scene.add(collector);
-
-const collectorRing = new THREE.Mesh(
-  new THREE.TorusGeometry(1.15, 0.12, 18, 40),
-  new THREE.MeshStandardMaterial({ color: 0x40ff8a, emissive: 0x40ff8a, emissiveIntensity: 0.5, roughness: 0.4 })
-);
-collectorRing.rotation.x = Math.PI / 2;
-collectorRing.position.copy(collector.position).add(new THREE.Vector3(0, 1.0, 0));
-scene.add(collectorRing);
-
-// Buy pads (in-world)
+// pad meshes for raycast hover
 const pads = [];
-function makePad(label, cost, pos, onBuy) {
+const padToDef = new Map();
+
+function makePad(def, x, z){
   const g = new THREE.Group();
-  g.position.copy(pos);
+  g.position.set(x, 0, z);
 
-  const pad = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.9, 0.9, 0.18, 24),
-    new THREE.MeshStandardMaterial({ color: 0x0f1a33, emissive: 0x7c5cff, emissiveIntensity: 0.25, roughness: 0.6 })
+  const base = new THREE.Mesh(
+    new THREE.CylinderGeometry(3.5, 3.5, 0.6, 32),
+    new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.9 })
   );
-  pad.position.y = 0.15;
+  base.position.y = 0.3;
 
-  const top = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.85, 0.85, 0.06, 24),
-    new THREE.MeshStandardMaterial({ color: 0x101a31, emissive: 0x33e6ff, emissiveIntensity: 0.35, roughness: 0.4 })
+  const ring = new THREE.Mesh(
+    new THREE.CylinderGeometry(3.2, 3.2, 0.22, 32),
+    new THREE.MeshStandardMaterial({ color: def.color, emissive: def.color, emissiveIntensity: 0.35, roughness: 0.5 })
   );
-  top.position.y = 0.26;
+  ring.position.y = 0.62;
 
-  g.add(pad, top);
+  const item = new THREE.Mesh(
+    new THREE.BoxGeometry(1.8, 1.8, 1.8),
+    new THREE.MeshStandardMaterial({ color: def.color, roughness: 0.65 })
+  );
+  item.position.y = 1.6;
+
+  g.add(base, ring, item);
   scene.add(g);
 
-  pads.push({ group: g, cost, label, onBuy });
+  // store for hover raycast (use ring)
+  ring.userData.isPad = true;
+  ring.userData.defId = def.id;
+  pads.push(ring);
+  padToDef.set(def.id, def);
+
+  return g;
 }
 
-makePad("Dropper", 50, new THREE.Vector3(-2.0, 0.0, -6.0), () => buyDropper());
-makePad("Conveyor", 75, new THREE.Vector3(0.8, 0.0, -6.0), () => buyConveyor());
-makePad("Bonus", 100, new THREE.Vector3(3.6, 0.0, -6.0), () => buyBonus());
-makePad("Speed", 60, new THREE.Vector3(6.4, 0.0, -6.0), () => buySpeed());
+// pad layout like screenshot (cluster)
+makePad(machineDefs[0],  25,  25);   // Small Dropper FREE-ish
+makePad(machineDefs[1],  10,  10);   // Conveyor
+makePad(machineDefs[2],   0,   0);   // Medium
+makePad(machineDefs[3],  18,  -6);   // Refinery
+makePad(machineDefs[4],  -8,   6);   // Mega
 
-// ---------- Coins ----------
-const coinMat = new THREE.MeshStandardMaterial({ color: 0xffd54a, emissive: 0xffd54a, emissiveIntensity: 0.20, roughness: 0.55 });
-function spawnCoin() {
-  const coin = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, 0.08, 18), coinMat);
-  coin.rotation.x = Math.PI / 2;
-  coin.position.set(dropperGroup.position.x, 2.0, dropperGroup.position.z + 1.45);
-  scene.add(coin);
-
-  tycoon.coins.push({
-    mesh: coin,
-    state: "fall",
-    t: 0,
-  });
-}
-
-function updateCoins(dt) {
-  const speed = 2.2 * tycoon.conveyorSpeed;
-
-  for (let i = tycoon.coins.length - 1; i >= 0; i--) {
-    const c = tycoon.coins[i];
-    const m = c.mesh;
-
-    // spin
-    m.rotation.z += dt * 8;
-
-    if (c.state === "fall") {
-      m.position.y -= dt * 3.2;
-      if (m.position.y <= 1.18) {
-        m.position.y = 1.18;
-        c.state = "belt";
-      }
-    } else if (c.state === "belt") {
-      m.position.x += dt * speed;
-
-      // if reaches collector area
-      if (m.position.x >= collector.position.x - 0.7) {
-        // reward
-        setMoney(tycoon.money + tycoon.coinValue);
-
-        // pop effect (scale quickly)
-        scene.remove(m);
-        tycoon.coins.splice(i, 1);
-      }
-    }
+// ---------- Income over time ----------
+let incomeTimer = 0;
+function getIncomePerTick(){
+  let income = 0;
+  for (const def of machineDefs){
+    if (state.machinesBuilt.has(def.id)) income += def.income;
   }
+  income += state.incomeBoost;
+  return income;
 }
 
-// ---------- Player Movement ----------
-const playerRadius = 0.55;
-let velY = 0;
-let grounded = true;
+// ---------- Character movement (WASD) + 3rd person camera ----------
+const keys = new Set();
+window.addEventListener("keydown", (e)=>{
+  keys.add(e.code);
 
-function getForwardRight() {
-  const forward = new THREE.Vector3(0, 0, -1).applyEuler(new THREE.Euler(0, yaw, 0));
-  const right = new THREE.Vector3(1, 0, 0).applyEuler(new THREE.Euler(0, yaw, 0));
-  return { forward, right };
-}
-
-function updatePlayer(dt) {
-  // camera rotation
-  camRig.position.copy(player.position);
-  camRig.rotation.set(0, yaw, 0);
-  camera.rotation.set(pitch, 0, 0);
-
-  // movement
-  const { forward, right } = getForwardRight();
-  let moveX = 0, moveZ = 0;
-
-  if (keys.has("KeyW")) { moveX += forward.x; moveZ += forward.z; }
-  if (keys.has("KeyS")) { moveX -= forward.x; moveZ -= forward.z; }
-  if (keys.has("KeyA")) { moveX -= right.x; moveZ -= right.z; }
-  if (keys.has("KeyD")) { moveX += right.x; moveZ += right.z; }
-
-  let len = Math.hypot(moveX, moveZ);
-  if (len > 0) { moveX /= len; moveZ /= len; }
-
-  const moveSpeed = tycoon.moveSpeed;
-  player.position.x += moveX * moveSpeed * dt;
-  player.position.z += moveZ * moveSpeed * dt;
-
-  // simple bounds
-  player.position.x = clamp(player.position.x, -90, 90);
-  player.position.z = clamp(player.position.z, -90, 90);
-
-  // gravity / jump
-  const jumpPressed = keys.has("Space");
-  if (jumpPressed && grounded) {
-    velY = 6.5;
-    grounded = false;
-  }
-  velY -= 18 * dt;
-  player.position.y += velY * dt;
-
-  if (player.position.y <= 0) {
-    player.position.y = 0;
-    velY = 0;
-    grounded = true;
-  }
-}
-
-function updatePlayerModel() {
-  // third-person model follows player, but slightly behind; keep it simple
-  const behind = new THREE.Vector3(0, 0, 0.0).applyEuler(new THREE.Euler(0, yaw, 0));
-  player.children.forEach(() => {});
-  // rotate body to face yaw
-  player.rotation.y = yaw;
-}
-
-// ---------- Interactions ----------
-function distXZ(a, b) {
-  const dx = a.x - b.x;
-  const dz = a.z - b.z;
-  return Math.hypot(dx, dz);
-}
-
-function tryInteract() {
-  // pad buy
-  for (const p of pads) {
-    const d = distXZ(player.position, p.group.position);
-    if (d < 1.25) {
-      p.onBuy();
-      return;
-    }
-  }
-}
-
-window.addEventListener("keydown", (e) => {
-  if (!running) return;
-  if (e.code === "KeyE") {
-    tryInteract();
+  // press E to buy if hovering
+  if (e.code === "KeyE" && state.running){
+    if (hoveredPad) tryBuyHovered();
   }
 });
+window.addEventListener("keyup", (e)=> keys.delete(e.code));
 
-// ---------- Shop / Upgrades ----------
-function buyDropper() {
-  const cost = 50 + (tycoon.dropperCount - 1) * 35;
-  if (!spend(cost)) return;
-  tycoon.dropperCount += 1;
-  // faster spawn (cap)
-  tycoon.dropInterval = Math.max(0.22, tycoon.dropInterval - 0.07);
+let camYaw = -0.9;   // nice angle like screenshot
+let camPitch = 0.35;
+let dragging = false;
+let lastX = 0;
+let lastY = 0;
+
+window.addEventListener("mousedown",(e)=>{
+  if (!state.running) return;
+  // right mouse drag to rotate camera
+  if (e.button === 2){
+    dragging = true;
+    lastX = e.clientX;
+    lastY = e.clientY;
+  }
+});
+window.addEventListener("mouseup",(e)=>{
+  if (e.button === 2) dragging = false;
+});
+window.addEventListener("contextmenu",(e)=> e.preventDefault());
+
+window.addEventListener("mousemove",(e)=>{
+  if (!state.running) return;
+  if (!dragging) return;
+  const dx = e.clientX - lastX;
+  const dy = e.clientY - lastY;
+  lastX = e.clientX; lastY = e.clientY;
+
+  camYaw -= dx * 0.006;
+  camPitch = clamp(camPitch - dy * 0.006, 0.12, 0.85);
+});
+
+function updateNoob(dt){
+  // direction based on camera yaw
+  const forward = new THREE.Vector3(Math.sin(camYaw), 0, Math.cos(camYaw));
+  const right   = new THREE.Vector3(forward.z, 0, -forward.x);
+
+  let move = new THREE.Vector3(0,0,0);
+  if (keys.has("KeyW")) move.add(forward);
+  if (keys.has("KeyS")) move.sub(forward);
+  if (keys.has("KeyA")) move.sub(right);
+  if (keys.has("KeyD")) move.add(right);
+
+  if (move.lengthSq() > 0){
+    move.normalize();
+    noob.position.addScaledVector(move, state.speed * dt);
+
+    // rotate noob to face move direction
+    const ang = Math.atan2(move.x, move.z);
+    noob.rotation.y = ang;
+  }
+
+  // keep inside world bounds
+  noob.position.x = clamp(noob.position.x, -120, 120);
+  noob.position.z = clamp(noob.position.z, -120, 120);
+  noob.position.y = 0;
 }
 
-function buyConveyor() {
-  const cost = 75 + Math.floor((tycoon.conveyorSpeed - 1) * 60);
-  if (!spend(cost)) return;
-  tycoon.conveyorSpeed = Math.min(3.0, tycoon.conveyorSpeed + 0.35);
+function updateCamera(){
+  const dist = 16;
+  const height = 10;
+
+  const cx = noob.position.x - Math.sin(camYaw) * dist;
+  const cz = noob.position.z - Math.cos(camYaw) * dist;
+  const cy = noob.position.y + height * camPitch + 3;
+
+  camera.position.set(cx, cy, cz);
+  camera.lookAt(noob.position.x, noob.position.y + 3.2, noob.position.z);
 }
 
-function buyBonus() {
-  const cost = 100 + (tycoon.coinValue - 1) * 80;
-  if (!spend(cost)) return;
-  tycoon.coinValue = Math.min(10, tycoon.coinValue + 1);
+// ---------- Hover tooltip with raycaster ----------
+const raycaster = new THREE.Raycaster();
+const mouse = new THREE.Vector2(0,0);
+let hoveredPad = null;
+
+window.addEventListener("mousemove", (e)=>{
+  const rect = renderer.domElement.getBoundingClientRect();
+  mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+  mouse.y = -(((e.clientY - rect.top) / rect.height) * 2 - 1);
+
+  // move tooltip near cursor
+  tip.style.left = `${e.clientX + 14}px`;
+  tip.style.top  = `${e.clientY + 14}px`;
+});
+
+function updateHover(){
+  if (!state.running){
+    tip.classList.add("hidden");
+    hoveredPad = null;
+    return;
+  }
+
+  raycaster.setFromCamera(mouse, camera);
+  const hits = raycaster.intersectObjects(pads, false);
+
+  if (hits.length === 0){
+    tip.classList.add("hidden");
+    hoveredPad = null;
+    return;
+  }
+
+  hoveredPad = hits[0].object;
+  const def = padToDef.get(hoveredPad.userData.defId);
+  if (!def){
+    tip.classList.add("hidden");
+    hoveredPad = null;
+    return;
+  }
+
+  tipName.textContent = def.name;
+  tipCost.textContent = def.cost === 0 ? "FREE!" : `$${def.cost}`;
+  tip.classList.remove("hidden");
 }
 
-function buySpeed() {
-  const cost = 60 + Math.floor((tycoon.moveSpeed - 7) * 35);
-  if (!spend(cost)) return;
-  tycoon.moveSpeed = Math.min(12.0, tycoon.moveSpeed + 0.8);
+function tryBuyHovered(){
+  const def = padToDef.get(hoveredPad.userData.defId);
+  if (!def) return;
+
+  if (state.machinesBuilt.has(def.id)) return; // already owned
+
+  if (def.cost > state.money) return; // not enough
+
+  // buy
+  setMoney(state.money - def.cost);
+  state.machinesBuilt.add(def.id);
+
+  // small feedback: brighten pad
+  hoveredPad.material.emissiveIntensity = 0.6;
 }
 
-buyDropperBtn.addEventListener("click", buyDropper);
-buyConveyorBtn.addEventListener("click", buyConveyor);
-buyBonusBtn.addEventListener("click", buyBonus);
-buySpeedBtn.addEventListener("click", buySpeed);
+// ---------- Build some visible machines when purchased ----------
+const machineObjects = new Map();
 
-function toggleShop(forceState) {
-  const wantOpen = typeof forceState === "boolean"
-    ? forceState
-    : shop.classList.contains("hidden");
+function spawnMachine(def){
+  if (machineObjects.has(def.id)) return;
 
-  shop.classList.toggle("hidden", !wantOpen);
-  shop.setAttribute("aria-hidden", wantOpen ? "false" : "true");
+  const g = new THREE.Group();
+  g.position.set(-10 + Math.random()*12, 0, -8 + Math.random()*12);
 
-  // if shop opens, unlock mouse
-  if (wantOpen) {
-    if (document.pointerLockElement) document.exitPointerLock();
-  } else {
-    // can relock by clicking canvas
+  const base = new THREE.Mesh(
+    new THREE.BoxGeometry(6, 1, 6),
+    new THREE.MeshStandardMaterial({ color: 0x2b2b2b, roughness: 0.9 })
+  );
+  base.position.y = 0.5;
+
+  const body = new THREE.Mesh(
+    new THREE.BoxGeometry(3.5, 4, 3.5),
+    new THREE.MeshStandardMaterial({ color: def.color, roughness: 0.7 })
+  );
+  body.position.y = 3;
+
+  const glow = new THREE.Mesh(
+    new THREE.BoxGeometry(3.8, 0.25, 3.8),
+    new THREE.MeshStandardMaterial({ color: 0x111111, emissive: def.color, emissiveIntensity: 0.25 })
+  );
+  glow.position.y = 1.2;
+
+  g.add(base, glow, body);
+  scene.add(g);
+  machineObjects.set(def.id, g);
+}
+
+function syncMachines(){
+  for (const def of machineDefs){
+    if (state.machinesBuilt.has(def.id)) spawnMachine(def);
   }
 }
 
-shopClose.addEventListener("click", () => toggleShop(false));
+// ---------- Shop GUI ----------
+function toggleShop(on){
+  const open = (typeof on === "boolean") ? on : shop.classList.contains("hidden");
+  shop.classList.toggle("hidden", !open);
+}
+shopBtn.addEventListener("click", ()=> toggleShop(true));
+shopClose.addEventListener("click", ()=> toggleShop(false));
 
-// ---------- Menu ----------
-btnHow.addEventListener("click", () => {
-  howPanel.classList.toggle("hidden");
+buySpeed.addEventListener("click", ()=>{
+  const cost = 60;
+  if (state.money < cost) return;
+  setMoney(state.money - cost);
+  state.speed = Math.min(14, state.speed + 1.2);
 });
 
-btnPlay.addEventListener("click", () => {
-  menu.classList.add("hidden");
+buyBoost.addEventListener("click", ()=>{
+  const cost = 120;
+  if (state.money < cost) return;
+  setMoney(state.money - cost);
+  state.incomeBoost += 1;
+});
+
+// ---------- Start game transition ----------
+startBtn.addEventListener("click", ()=>{
+  menu.style.display = "none";
   hud.classList.remove("hidden");
-  running = true;
-  setMoney(25); // starter cash
-  // prompt player to click canvas to lock
-});
+  state.running = true;
 
-// ---------- Resize ----------
-window.addEventListener("resize", () => {
-  renderer.setSize(innerWidth, innerHeight);
-  camera.aspect = innerWidth / innerHeight;
-  camera.updateProjectionMatrix();
+  // give FREE small dropper at start like screenshot
+  state.machinesBuilt.add("smallDropper");
+  syncMachines();
 });
 
 // ---------- Loop ----------
 const clock = new THREE.Clock();
 
-function tick() {
+function tick(){
   const dt = Math.min(clock.getDelta(), 0.05);
 
-  if (running) {
-    updatePlayer(dt);
-    updatePlayerModel();
+  if (state.running){
+    updateNoob(dt);
+    updateCamera();
+    updateHover();
 
-    // Spawn coins based on droppers
-    tycoon.lastDrop += dt;
-    if (tycoon.lastDrop >= tycoon.dropInterval) {
-      tycoon.lastDrop = 0;
-      // spawn multiple coins depending on droppers (lightweight)
-      const count = Math.min(4, tycoon.dropperCount);
-      for (let i = 0; i < count; i++) spawnCoin();
+    // income tick (like tycoon cash)
+    incomeTimer += dt;
+    if (incomeTimer >= 1.0){
+      incomeTimer = 0;
+      const inc = getIncomePerTick();
+      if (inc > 0) setMoney(state.money + inc);
     }
 
-    updateCoins(dt);
-
-    // animate collector ring
-    collectorRing.rotation.z += dt * 1.6;
+    syncMachines();
+  } else {
+    // menu camera idle
+    camera.position.set(0, 45, 55);
+    camera.lookAt(0, 0, 0);
   }
 
   renderer.render(scene, camera);
@@ -518,3 +472,10 @@ function tick() {
 }
 
 tick();
+
+// resize
+window.addEventListener("resize", ()=>{
+  renderer.setSize(innerWidth, innerHeight);
+  camera.aspect = innerWidth/innerHeight;
+  camera.updateProjectionMatrix();
+});
