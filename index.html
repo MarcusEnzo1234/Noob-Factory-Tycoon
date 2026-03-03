@@ -3,104 +3,77 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Noob Factory Tycoon</title>
+  <title>Factory Tycoon 3D</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <div id="app">
-    <!-- HUD -->
-    <div id="hud" class="hidden">
-      <div class="hud-left">
-        <div class="pill">💰 Money: <span id="money">0</span></div>
-        <div class="pill small">Press <b>Tab</b> to open Shop</div>
+  <canvas id="game"></canvas>
+
+  <!-- MENU (like screenshot) -->
+  <div id="menu">
+    <div class="menu-center">
+      <div class="menu-title">
+        <span class="icon">🏭</span>
+        <span>Factory Tycoon 3D</span>
+      </div>
+      <div class="menu-subtitle">
+        Build your factory empire! Walk onto the glowing purchase buttons to buy buildings.
+        Collect the cash they generate and unlock more powerful machines!
       </div>
 
-      <div class="hud-right">
-        <div class="pill small">WASD move • Mouse look • Space jump • E interact</div>
-      </div>
+      <button id="startBtn" class="start-btn">
+        <span class="play">▶</span>
+        <span>START GAME</span>
+      </button>
+    </div>
+  </div>
 
-      <div id="crosshair" class="hidden"></div>
+  <!-- HUD -->
+  <div id="hud" class="hidden">
+    <div id="moneyBar">
+      <span class="coin">🪙</span>
+      <span id="moneyText">$0</span>
     </div>
 
-    <!-- MENU -->
-    <div id="menu">
-      <div class="menu-card">
-        <div class="title">Noob Factory Tycoon</div>
-        <div class="subtitle">Roblox-style 3D • Build droppers • Earn cash</div>
+    <button id="shopBtn" class="shop-btn">Shop</button>
+  </div>
 
-        <div class="menu-buttons">
-          <button id="btnPlay" class="btn primary">Play</button>
-          <button id="btnHow" class="btn">How to Play</button>
-        </div>
-
-        <div id="howPanel" class="how hidden">
-          <ul>
-            <li><b>WASD</b> to move, <b>Mouse</b> to look (click to lock cursor)</li>
-            <li>Stand on glowing pads and press <b>E</b> to buy upgrades</li>
-            <li>Dropper makes coins → conveyor → collector gives money</li>
-            <li>Press <b>Tab</b> for the Shop GUI</li>
-          </ul>
-        </div>
-
-        <div class="footer">Made for GitHub Pages • Three.js</div>
-      </div>
-      <div class="bg-glow"></div>
+  <!-- SHOP GUI -->
+  <div id="shop" class="hidden">
+    <div class="shop-header">
+      <div class="shop-title">Shop</div>
+      <button id="shopClose" class="shop-x">✕</button>
     </div>
 
-    <!-- SHOP -->
-    <div id="shop" class="panel hidden" aria-hidden="true">
-      <div class="panel-header">
-        <div class="panel-title">Shop</div>
-        <button id="shopClose" class="x">✕</button>
+    <div class="shop-body">
+      <div class="shop-item">
+        <div class="shop-name">Walk Speed</div>
+        <div class="shop-desc">Move faster around your base</div>
+        <div class="shop-row">
+          <div class="shop-cost">$60</div>
+          <button id="buySpeed" class="shop-buy">Buy</button>
+        </div>
       </div>
 
-      <div class="panel-body">
-        <div class="shop-grid">
-          <div class="shop-item">
-            <div class="shop-name">Add Dropper</div>
-            <div class="shop-desc">Spawns more coins per tick</div>
-            <div class="shop-row">
-              <div class="cost">Cost: <b>$50</b></div>
-              <button class="btn primary" id="buyDropper">Buy</button>
-            </div>
-          </div>
-
-          <div class="shop-item">
-            <div class="shop-name">Conveyor Speed</div>
-            <div class="shop-desc">Coins move faster to collector</div>
-            <div class="shop-row">
-              <div class="cost">Cost: <b>$75</b></div>
-              <button class="btn primary" id="buyConveyor">Buy</button>
-            </div>
-          </div>
-
-          <div class="shop-item">
-            <div class="shop-name">Collector Bonus</div>
-            <div class="shop-desc">More money per coin</div>
-            <div class="shop-row">
-              <div class="cost">Cost: <b>$100</b></div>
-              <button class="btn primary" id="buyBonus">Buy</button>
-            </div>
-          </div>
-
-          <div class="shop-item">
-            <div class="shop-name">Sprint Boots</div>
-            <div class="shop-desc">Move faster like a pro</div>
-            <div class="shop-row">
-              <div class="cost">Cost: <b>$60</b></div>
-              <button class="btn primary" id="buySpeed">Buy</button>
-            </div>
-          </div>
+      <div class="shop-item">
+        <div class="shop-name">Income Boost</div>
+        <div class="shop-desc">+1 cash per tick (global)</div>
+        <div class="shop-row">
+          <div class="shop-cost">$120</div>
+          <button id="buyBoost" class="shop-buy">Buy</button>
         </div>
+      </div>
 
-        <div class="hint">
-          Tip: You can also buy upgrades by stepping on the pads in the factory and pressing <b>E</b>.
-        </div>
+      <div class="shop-hint">
+        Tip: You can also buy by stepping on pads in the world.
       </div>
     </div>
+  </div>
 
-    <!-- CANVAS -->
-    <canvas id="c"></canvas>
+  <!-- Hover Tooltip (like screenshot black boxes) -->
+  <div id="tip" class="hidden">
+    <div class="tip-name" id="tipName">Conveyor Belt</div>
+    <div class="tip-cost" id="tipCost">$50</div>
   </div>
 
   <script type="module" src="game.js"></script>
