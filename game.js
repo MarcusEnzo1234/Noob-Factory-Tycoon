@@ -8,92 +8,84 @@ const startBtn = document.getElementById("startBtn");
 const hud = document.getElementById("hud");
 const moneyText = document.getElementById("moneyText");
 
-const shop = document.getElementById("shop");
-const shopBtn = document.getElementById("shopBtn");
-const shopClose = document.getElementById("shopClose");
-const buySpeed = document.getElementById("buySpeed");
-const buyBoost = document.getElementById("buyBoost");
-
-const tip = document.getElementById("tip");
-const tipName = document.getElementById("tipName");
-const tipCost = document.getElementById("tipCost");
+const hoverTip = document.getElementById("hoverTip");
+const hoverTitle = document.getElementById("hoverTitle");
+const hoverSub = document.getElementById("hoverSub");
 
 function clamp(v, a, b){ return Math.max(a, Math.min(b, v)); }
 
-// ---------- Three Setup ----------
+// ---------- Renderer / Scene ----------
 const renderer = new THREE.WebGLRenderer({ canvas, antialias:true });
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 renderer.setSize(innerWidth, innerHeight);
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x9fd5ff); // bright sky-ish like screenshot
+scene.background = new THREE.Color(0x9fd5ff);
 
-const camera = new THREE.PerspectiveCamera(70, innerWidth/innerHeight, 0.1, 500);
+const camera = new THREE.PerspectiveCamera(70, innerWidth/innerHeight, 0.1, 800);
 
-// lights
-scene.add(new THREE.HemisphereLight(0xffffff, 0x445566, 0.85));
+scene.add(new THREE.HemisphereLight(0xffffff, 0x556677, 0.9));
 const sun = new THREE.DirectionalLight(0xffffff, 1.0);
 sun.position.set(30, 45, 20);
 scene.add(sun);
 
-// ---------- World (flat base + trees + grid) ----------
+// ---------- World (plot like screenshot) ----------
 const ground = new THREE.Mesh(
-  new THREE.PlaneGeometry(300, 300),
-  new THREE.MeshStandardMaterial({ color: 0x7cc06a, roughness: 1.0 })
+  new THREE.PlaneGeometry(400, 400),
+  new THREE.MeshStandardMaterial({ color: 0x7fc36e, roughness: 1.0 })
 );
 ground.rotation.x = -Math.PI/2;
 scene.add(ground);
 
-// tycoon plot grid like screenshot
-const plotSize = 70;
+const plotSize = 72;
 const plot = new THREE.Mesh(
   new THREE.PlaneGeometry(plotSize, plotSize),
-  new THREE.MeshStandardMaterial({ color: 0x6fbf6d, roughness: 1.0 })
+  new THREE.MeshStandardMaterial({ color: 0x74bf6f, roughness: 1.0 })
 );
 plot.rotation.x = -Math.PI/2;
-plot.position.set(0, 0.02, 0);
+plot.position.y = 0.02;
 scene.add(plot);
 
-const grid = new THREE.GridHelper(plotSize, 20, 0x2b6e35, 0x2b6e35);
-grid.position.set(0, 0.03, 0);
+const grid = new THREE.GridHelper(plotSize, 24, 0x2d6f37, 0x2d6f37);
+grid.position.y = 0.03;
 scene.add(grid);
 
-// plot border
-const borderMat = new THREE.MeshStandardMaterial({ color: 0xa06a4d, roughness: 0.95 });
+// border
+const borderMat = new THREE.MeshStandardMaterial({ color: 0xa46d50, roughness: 0.95 });
 function borderPiece(w,h,d,x,z){
   const m = new THREE.Mesh(new THREE.BoxGeometry(w,h,d), borderMat);
   m.position.set(x, h/2, z);
   scene.add(m);
 }
-const bw = plotSize, bh = 1.2, bt = 2.2;
+const bw = plotSize, bh = 1.2, bt = 2.4;
 borderPiece(bw+bt, bh, bt, 0, -plotSize/2 - bt/2);
 borderPiece(bw+bt, bh, bt, 0,  plotSize/2 + bt/2);
 borderPiece(bt, bh, bw, -plotSize/2 - bt/2, 0);
 borderPiece(bt, bh, bw,  plotSize/2 + bt/2, 0);
 
-// simple lowpoly trees
+// trees outside
 function makeTree(x,z){
   const trunk = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.5,0.6,4,6),
+    new THREE.CylinderGeometry(0.55,0.65,4,6),
     new THREE.MeshStandardMaterial({ color: 0x6a3f2b, roughness: 1.0 })
   );
   trunk.position.set(x, 2, z);
   const top = new THREE.Mesh(
-    new THREE.BoxGeometry(3.5,3.5,3.5),
+    new THREE.BoxGeometry(3.6,3.6,3.6),
     new THREE.MeshStandardMaterial({ color: 0x2f7d3a, roughness: 1.0 })
   );
   top.position.set(x, 5.2, z);
   scene.add(trunk, top);
 }
-for (let i=0;i<16;i++){
-  const x = (Math.random()*220)-110;
-  const z = (Math.random()*220)-110;
-  if (Math.abs(x) < plotSize/2 + 10 && Math.abs(z) < plotSize/2 + 10) continue;
+for (let i=0;i<18;i++){
+  const x = (Math.random()*280)-140;
+  const z = (Math.random()*280)-140;
+  if (Math.abs(x) < plotSize/2 + 12 && Math.abs(z) < plotSize/2 + 12) continue;
   makeTree(x,z);
 }
 
-// ---------- Roblox-style Noob ----------
+// ---------- Roblox Noob ----------
 function makeSmileyTexture(){
   const c = document.createElement("canvas");
   c.width = 256; c.height = 256;
@@ -110,7 +102,7 @@ function makeSmileyTexture(){
   ctx.lineWidth = 16;
   ctx.lineCap = "round";
   ctx.beginPath();
-  ctx.arc(128, 150, 60, 0.15*Math.PI, 0.85*Math.PI);
+  ctx.arc(128, 152, 62, 0.15*Math.PI, 0.85*Math.PI);
   ctx.stroke();
 
   const tex = new THREE.CanvasTexture(c);
@@ -147,15 +139,50 @@ const legR = new THREE.Mesh(new THREE.BoxGeometry(0.7,1.6,0.7), matGreen);
 legR.position.set( 0.45, 0.8, 0);
 
 noob.add(head, torso, armL, armR, legL, legR);
-noob.position.set(-20, 0, 10);
+noob.position.set(-18, 0, 12);
 
-// ---------- Tycoon System ----------
+// ---------- Controls / Camera ----------
+const keys = new Set();
+window.addEventListener("keydown", (e)=> keys.add(e.code));
+window.addEventListener("keyup", (e)=> keys.delete(e.code));
+
+let running = false;
+
+let camYaw = -0.85;   // same vibe as screenshot angle
+let camPitch = 0.33;
+let dragging = false;
+let lastX=0, lastY=0;
+
+window.addEventListener("contextmenu", (e)=> e.preventDefault());
+window.addEventListener("mousedown", (e)=>{
+  if (!running) return;
+  if (e.button === 2){
+    dragging = true;
+    lastX = e.clientX; lastY = e.clientY;
+  }
+});
+window.addEventListener("mouseup", (e)=>{
+  if (e.button === 2) dragging = false;
+});
+window.addEventListener("mousemove", (e)=>{
+  // tooltip follows cursor
+  hoverTip.style.left = `${e.clientX + 14}px`;
+  hoverTip.style.top = `${e.clientY + 14}px`;
+
+  if (!running || !dragging) return;
+  const dx = e.clientX - lastX;
+  const dy = e.clientY - lastY;
+  lastX = e.clientX; lastY = e.clientY;
+  camYaw -= dx * 0.006;
+  camPitch = clamp(camPitch - dy * 0.006, 0.12, 0.85);
+});
+
+// ---------- Money / Tycoon ----------
 const state = {
-  running: false,
-  money: 150, // matches screenshot vibe
-  speed: 9,
+  money: 150,
+  speed: 9.5,
   incomeBoost: 0,
-  machinesBuilt: new Set(),
+  owned: new Set(),
 };
 
 function setMoney(v){
@@ -164,120 +191,216 @@ function setMoney(v){
 }
 setMoney(state.money);
 
-// machines list (pads unlock these)
-const machineDefs = [
-  { id:"smallDropper",  name:"Small Dropper",    cost:0,   income: 5,  color:0x9cff57 },
-  { id:"conveyor",      name:"Conveyor Belt",    cost:50,  income: 0,  color:0x5ff4ff },
-  { id:"mediumDropper", name:"Medium Dropper",   cost:100, income: 12, color:0xa889ff },
-  { id:"refinery",      name:"Refinery",         cost:200, income: 25, color:0xff7d7d },
-  { id:"megaDropper",   name:"Mega Dropper",     cost:300, income: 40, color:0xffd24a },
+// ---------- Pads + Labels (the BIG screenshot feature) ----------
+const padDefs = [
+  { id:"small",   name:"Small Dropper",   cost:0,    perSec:5,  color:0x9cff57, labelPos:new THREE.Vector3(0,0,0) },
+  { id:"conv",    name:"Conveyor Belt",   cost:50,   perSec:0,  color:0x5ff4ff, labelPos:new THREE.Vector3(0,0,0) },
+  { id:"ref",     name:"Refinery",        cost:75,   perSec:8,  color:0x4dd6ff, labelPos:new THREE.Vector3(0,0,0) },
+  { id:"med",     name:"Medium Dropper",  cost:100,  perSec:12, color:0xa889ff, labelPos:new THREE.Vector3(0,0,0) },
+  { id:"mega",    name:"Mega Dropper",    cost:250,  perSec:25, color:0xffd24a, labelPos:new THREE.Vector3(0,0,0) },
+  { id:"quant",   name:"Quantum Processor",cost:500, perSec:55, color:0xff7d7d, labelPos:new THREE.Vector3(0,0,0) },
 ];
 
-// pad meshes for raycast hover
 const pads = [];
-const padToDef = new Map();
+const defById = new Map(padDefs.map(d=>[d.id,d]));
+
+// 2D labels in 3D using Sprite
+function makeLabelSprite(textLines){
+  const c = document.createElement("canvas");
+  c.width = 512; c.height = 256;
+  const ctx = c.getContext("2d");
+
+  // background
+  ctx.fillStyle = "rgba(0,0,0,0.55)";
+  roundRect(ctx, 10, 10, 492, 236, 18);
+  ctx.fill();
+
+  // text
+  ctx.fillStyle = "rgba(255,255,255,0.95)";
+  ctx.font = "bold 44px system-ui, Arial";
+  ctx.textBaseline = "top";
+  ctx.fillText(textLines[0], 26, 24);
+
+  if (textLines[1]) {
+    ctx.fillStyle = "rgba(234,240,255,0.9)";
+    ctx.font = "bold 34px system-ui, Arial";
+    ctx.fillText(textLines[1], 26, 82);
+  }
+
+  // price pill
+  if (textLines[2]) {
+    const pillText = textLines[2];
+    const w = ctx.measureText(pillText).width + 42;
+    const x = 26;
+    const y = 150;
+    ctx.fillStyle = "rgba(47,158,68,0.95)";
+    roundRect(ctx, x, y, w, 62, 16);
+    ctx.fill();
+
+    ctx.fillStyle = "white";
+    ctx.font = "900 34px system-ui, Arial";
+    ctx.fillText(pillText, x + 18, y + 14);
+  }
+
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  const mat = new THREE.SpriteMaterial({ map: tex, transparent:true });
+  const spr = new THREE.Sprite(mat);
+  spr.scale.set(10, 5, 1); // size in world
+  return spr;
+}
+
+function roundRect(ctx, x, y, w, h, r){
+  ctx.beginPath();
+  ctx.moveTo(x+r, y);
+  ctx.arcTo(x+w, y, x+w, y+h, r);
+  ctx.arcTo(x+w, y+h, x, y+h, r);
+  ctx.arcTo(x, y+h, x, y, r);
+  ctx.arcTo(x, y, x+w, y, r);
+  ctx.closePath();
+}
 
 function makePad(def, x, z){
-  const g = new THREE.Group();
-  g.position.set(x, 0, z);
+  const group = new THREE.Group();
+  group.position.set(x, 0, z);
 
   const base = new THREE.Mesh(
-    new THREE.CylinderGeometry(3.5, 3.5, 0.6, 32),
-    new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.9 })
+    new THREE.CylinderGeometry(3.6, 3.6, 0.65, 40),
+    new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.92 })
   );
-  base.position.y = 0.3;
+  base.position.y = 0.32;
 
   const ring = new THREE.Mesh(
-    new THREE.CylinderGeometry(3.2, 3.2, 0.22, 32),
-    new THREE.MeshStandardMaterial({ color: def.color, emissive: def.color, emissiveIntensity: 0.35, roughness: 0.5 })
+    new THREE.CylinderGeometry(3.25, 3.25, 0.22, 40),
+    new THREE.MeshStandardMaterial({
+      color: def.color,
+      emissive: def.color,
+      emissiveIntensity: 0.30,
+      roughness: 0.6
+    })
   );
   ring.position.y = 0.62;
 
   const item = new THREE.Mesh(
-    new THREE.BoxGeometry(1.8, 1.8, 1.8),
-    new THREE.MeshStandardMaterial({ color: def.color, roughness: 0.65 })
+    new THREE.BoxGeometry(1.9, 1.9, 1.9),
+    new THREE.MeshStandardMaterial({ color: def.color, roughness: 0.7 })
   );
-  item.position.y = 1.6;
+  item.position.y = 1.7;
 
-  g.add(base, ring, item);
-  scene.add(g);
+  // label like screenshot (stacked black box with green price)
+  const lockedText = def.cost === 0 ? "" : `LOCKED ($${def.cost})`;
+  const priceText = def.cost === 0 ? "FREE!" : `$${def.cost}`;
+  const spr = makeLabelSprite([def.name, lockedText, priceText]);
+  spr.position.set(4.2, 4.8, 0); // offset like screenshot
+  group.add(spr);
 
-  // store for hover raycast (use ring)
+  group.add(base, ring, item);
+  scene.add(group);
+
   ring.userData.isPad = true;
   ring.userData.defId = def.id;
   pads.push(ring);
-  padToDef.set(def.id, def);
 
-  return g;
+  return { group, ring, label: spr, defId: def.id };
 }
 
-// pad layout like screenshot (cluster)
-makePad(machineDefs[0],  25,  25);   // Small Dropper FREE-ish
-makePad(machineDefs[1],  10,  10);   // Conveyor
-makePad(machineDefs[2],   0,   0);   // Medium
-makePad(machineDefs[3],  18,  -6);   // Refinery
-makePad(machineDefs[4],  -8,   6);   // Mega
+// layout cluster similar to screenshot
+const padObjs = [];
+padObjs.push(makePad(defById.get("small"),  26,  24));
+padObjs.push(makePad(defById.get("conv"),   14,  10));
+padObjs.push(makePad(defById.get("ref"),    28,   6));
+padObjs.push(makePad(defById.get("med"),     4,   2));
+padObjs.push(makePad(defById.get("mega"),   -6,  10));
+padObjs.push(makePad(defById.get("quant"),   10, -2));
 
-// ---------- Income over time ----------
-let incomeTimer = 0;
-function getIncomePerTick(){
-  let income = 0;
-  for (const def of machineDefs){
-    if (state.machinesBuilt.has(def.id)) income += def.income;
+// buy by standing on pad + press E
+function distXZ(a, b){
+  const dx = a.x - b.x;
+  const dz = a.z - b.z;
+  return Math.hypot(dx, dz);
+}
+
+function tryBuyNearest(){
+  let best = null;
+  let bestD = 999;
+  for (const p of padObjs){
+    const d = distXZ(noob.position, p.group.position);
+    if (d < bestD){ bestD = d; best = p; }
   }
-  income += state.incomeBoost;
-  return income;
+  if (!best || bestD > 4.2) return;
+
+  const def = defById.get(best.defId);
+  if (!def) return;
+  if (state.owned.has(def.id)) return;
+  if (def.cost > state.money) return;
+
+  // buy
+  setMoney(state.money - def.cost);
+  state.owned.add(def.id);
+
+  // make label show "OWNED"
+  const spr = best.label;
+  spr.material.map.dispose();
+  spr.material.map = makeLabelSprite([def.name, "OWNED", ""]).material.map;
+  spr.material.needsUpdate = true;
+
+  // brighten ring
+  best.ring.material.emissiveIntensity = 0.55;
 }
 
-// ---------- Character movement (WASD) + 3rd person camera ----------
-const keys = new Set();
 window.addEventListener("keydown", (e)=>{
-  keys.add(e.code);
+  if (!running) return;
+  if (e.code === "KeyE") tryBuyNearest();
+});
 
-  // press E to buy if hovering
-  if (e.code === "KeyE" && state.running){
-    if (hoveredPad) tryBuyHovered();
+// income per second
+let incomeTimer = 0;
+function incomePerSec(){
+  let sum = 0;
+  for (const def of padDefs){
+    if (state.owned.has(def.id)) sum += def.perSec;
   }
+  sum += state.incomeBoost;
+  return sum;
+}
+
+// ---------- Hover (small helper tip) ----------
+const raycaster = new THREE.Raycaster();
+const mouse = new THREE.Vector2(0,0);
+window.addEventListener("mousemove", (e)=>{
+  const rect = renderer.domElement.getBoundingClientRect();
+  mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+  mouse.y = -(((e.clientY - rect.top) / rect.height) * 2 - 1);
 });
-window.addEventListener("keyup", (e)=> keys.delete(e.code));
 
-let camYaw = -0.9;   // nice angle like screenshot
-let camPitch = 0.35;
-let dragging = false;
-let lastX = 0;
-let lastY = 0;
-
-window.addEventListener("mousedown",(e)=>{
-  if (!state.running) return;
-  // right mouse drag to rotate camera
-  if (e.button === 2){
-    dragging = true;
-    lastX = e.clientX;
-    lastY = e.clientY;
+function updateHover(){
+  if (!running){
+    hoverTip.classList.add("hidden");
+    return;
   }
-});
-window.addEventListener("mouseup",(e)=>{
-  if (e.button === 2) dragging = false;
-});
-window.addEventListener("contextmenu",(e)=> e.preventDefault());
+  raycaster.setFromCamera(mouse, camera);
+  const hits = raycaster.intersectObjects(pads, false);
+  if (hits.length === 0){
+    hoverTip.classList.add("hidden");
+    return;
+  }
+  const obj = hits[0].object;
+  const def = defById.get(obj.userData.defId);
+  if (!def){
+    hoverTip.classList.add("hidden");
+    return;
+  }
+  hoverTitle.textContent = def.name;
+  hoverSub.textContent = state.owned.has(def.id) ? "Owned" : (def.cost === 0 ? "Press E to claim" : "Press E to buy");
+  hoverTip.classList.remove("hidden");
+}
 
-window.addEventListener("mousemove",(e)=>{
-  if (!state.running) return;
-  if (!dragging) return;
-  const dx = e.clientX - lastX;
-  const dy = e.clientY - lastY;
-  lastX = e.clientX; lastY = e.clientY;
-
-  camYaw -= dx * 0.006;
-  camPitch = clamp(camPitch - dy * 0.006, 0.12, 0.85);
-});
-
+// ---------- Movement + 3rd person camera ----------
 function updateNoob(dt){
-  // direction based on camera yaw
   const forward = new THREE.Vector3(Math.sin(camYaw), 0, Math.cos(camYaw));
   const right   = new THREE.Vector3(forward.z, 0, -forward.x);
 
-  let move = new THREE.Vector3(0,0,0);
+  const move = new THREE.Vector3(0,0,0);
   if (keys.has("KeyW")) move.add(forward);
   if (keys.has("KeyS")) move.sub(forward);
   if (keys.has("KeyA")) move.sub(right);
@@ -286,159 +409,34 @@ function updateNoob(dt){
   if (move.lengthSq() > 0){
     move.normalize();
     noob.position.addScaledVector(move, state.speed * dt);
-
-    // rotate noob to face move direction
-    const ang = Math.atan2(move.x, move.z);
-    noob.rotation.y = ang;
+    noob.rotation.y = Math.atan2(move.x, move.z);
   }
 
-  // keep inside world bounds
-  noob.position.x = clamp(noob.position.x, -120, 120);
-  noob.position.z = clamp(noob.position.z, -120, 120);
+  noob.position.x = clamp(noob.position.x, -140, 140);
+  noob.position.z = clamp(noob.position.z, -140, 140);
   noob.position.y = 0;
 }
 
 function updateCamera(){
-  const dist = 16;
+  const dist = 18;
   const height = 10;
 
   const cx = noob.position.x - Math.sin(camYaw) * dist;
   const cz = noob.position.z - Math.cos(camYaw) * dist;
-  const cy = noob.position.y + height * camPitch + 3;
+  const cy = noob.position.y + height * camPitch + 3.2;
 
   camera.position.set(cx, cy, cz);
   camera.lookAt(noob.position.x, noob.position.y + 3.2, noob.position.z);
 }
 
-// ---------- Hover tooltip with raycaster ----------
-const raycaster = new THREE.Raycaster();
-const mouse = new THREE.Vector2(0,0);
-let hoveredPad = null;
-
-window.addEventListener("mousemove", (e)=>{
-  const rect = renderer.domElement.getBoundingClientRect();
-  mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
-  mouse.y = -(((e.clientY - rect.top) / rect.height) * 2 - 1);
-
-  // move tooltip near cursor
-  tip.style.left = `${e.clientX + 14}px`;
-  tip.style.top  = `${e.clientY + 14}px`;
-});
-
-function updateHover(){
-  if (!state.running){
-    tip.classList.add("hidden");
-    hoveredPad = null;
-    return;
-  }
-
-  raycaster.setFromCamera(mouse, camera);
-  const hits = raycaster.intersectObjects(pads, false);
-
-  if (hits.length === 0){
-    tip.classList.add("hidden");
-    hoveredPad = null;
-    return;
-  }
-
-  hoveredPad = hits[0].object;
-  const def = padToDef.get(hoveredPad.userData.defId);
-  if (!def){
-    tip.classList.add("hidden");
-    hoveredPad = null;
-    return;
-  }
-
-  tipName.textContent = def.name;
-  tipCost.textContent = def.cost === 0 ? "FREE!" : `$${def.cost}`;
-  tip.classList.remove("hidden");
-}
-
-function tryBuyHovered(){
-  const def = padToDef.get(hoveredPad.userData.defId);
-  if (!def) return;
-
-  if (state.machinesBuilt.has(def.id)) return; // already owned
-
-  if (def.cost > state.money) return; // not enough
-
-  // buy
-  setMoney(state.money - def.cost);
-  state.machinesBuilt.add(def.id);
-
-  // small feedback: brighten pad
-  hoveredPad.material.emissiveIntensity = 0.6;
-}
-
-// ---------- Build some visible machines when purchased ----------
-const machineObjects = new Map();
-
-function spawnMachine(def){
-  if (machineObjects.has(def.id)) return;
-
-  const g = new THREE.Group();
-  g.position.set(-10 + Math.random()*12, 0, -8 + Math.random()*12);
-
-  const base = new THREE.Mesh(
-    new THREE.BoxGeometry(6, 1, 6),
-    new THREE.MeshStandardMaterial({ color: 0x2b2b2b, roughness: 0.9 })
-  );
-  base.position.y = 0.5;
-
-  const body = new THREE.Mesh(
-    new THREE.BoxGeometry(3.5, 4, 3.5),
-    new THREE.MeshStandardMaterial({ color: def.color, roughness: 0.7 })
-  );
-  body.position.y = 3;
-
-  const glow = new THREE.Mesh(
-    new THREE.BoxGeometry(3.8, 0.25, 3.8),
-    new THREE.MeshStandardMaterial({ color: 0x111111, emissive: def.color, emissiveIntensity: 0.25 })
-  );
-  glow.position.y = 1.2;
-
-  g.add(base, glow, body);
-  scene.add(g);
-  machineObjects.set(def.id, g);
-}
-
-function syncMachines(){
-  for (const def of machineDefs){
-    if (state.machinesBuilt.has(def.id)) spawnMachine(def);
-  }
-}
-
-// ---------- Shop GUI ----------
-function toggleShop(on){
-  const open = (typeof on === "boolean") ? on : shop.classList.contains("hidden");
-  shop.classList.toggle("hidden", !open);
-}
-shopBtn.addEventListener("click", ()=> toggleShop(true));
-shopClose.addEventListener("click", ()=> toggleShop(false));
-
-buySpeed.addEventListener("click", ()=>{
-  const cost = 60;
-  if (state.money < cost) return;
-  setMoney(state.money - cost);
-  state.speed = Math.min(14, state.speed + 1.2);
-});
-
-buyBoost.addEventListener("click", ()=>{
-  const cost = 120;
-  if (state.money < cost) return;
-  setMoney(state.money - cost);
-  state.incomeBoost += 1;
-});
-
-// ---------- Start game transition ----------
+// ---------- Start ----------
 startBtn.addEventListener("click", ()=>{
   menu.style.display = "none";
   hud.classList.remove("hidden");
-  state.running = true;
+  running = true;
 
-  // give FREE small dropper at start like screenshot
-  state.machinesBuilt.add("smallDropper");
-  syncMachines();
+  // give small dropper free (like screenshot)
+  state.owned.add("small");
 });
 
 // ---------- Loop ----------
@@ -447,33 +445,28 @@ const clock = new THREE.Clock();
 function tick(){
   const dt = Math.min(clock.getDelta(), 0.05);
 
-  if (state.running){
+  if (running){
     updateNoob(dt);
     updateCamera();
     updateHover();
 
-    // income tick (like tycoon cash)
     incomeTimer += dt;
-    if (incomeTimer >= 1.0){
+    if (incomeTimer >= 1){
       incomeTimer = 0;
-      const inc = getIncomePerTick();
+      const inc = incomePerSec();
       if (inc > 0) setMoney(state.money + inc);
     }
-
-    syncMachines();
   } else {
-    // menu camera idle
-    camera.position.set(0, 45, 55);
+    // menu camera
+    camera.position.set(0, 45, 65);
     camera.lookAt(0, 0, 0);
   }
 
   renderer.render(scene, camera);
   requestAnimationFrame(tick);
 }
-
 tick();
 
-// resize
 window.addEventListener("resize", ()=>{
   renderer.setSize(innerWidth, innerHeight);
   camera.aspect = innerWidth/innerHeight;
