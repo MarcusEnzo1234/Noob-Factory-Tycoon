@@ -1,14 +1,11 @@
 :root{
-  --bg1:#0b1020;
-  --bg2:#0b1630;
   --text:#eaf0ff;
   --muted:rgba(234,240,255,.72);
 
   --green1:#2f9e44;
   --green2:#2b8a3e;
-  --greenGlow: rgba(47,158,68,.35);
 
-  --panel: rgba(0,0,0,.55);
+  --panel: rgba(0,0,0,.62);
   --panel2: rgba(0,0,0,.72);
   --stroke: rgba(255,255,255,.12);
 }
@@ -17,10 +14,9 @@
 html,body{ height:100%; margin:0; }
 body{
   overflow:hidden;
-  background: radial-gradient(1200px 800px at 50% 40%, rgba(70,120,255,.12), transparent 55%),
-              linear-gradient(180deg, var(--bg2), var(--bg1));
   font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
   color:var(--text);
+  background: #0b1020;
 }
 
 canvas{
@@ -31,49 +27,50 @@ canvas{
   display:block;
 }
 
-/* MENU */
+/* MENU like screenshot */
 #menu{
   position:fixed;
   inset:0;
   display:grid;
   place-items:center;
-  background: radial-gradient(900px 600px at 50% 45%, rgba(255,255,255,.06), transparent 65%);
+  background:
+    radial-gradient(900px 650px at 50% 45%, rgba(255,255,255,.08), transparent 65%),
+    radial-gradient(1200px 900px at 30% 20%, rgba(90,140,255,.18), transparent 60%),
+    radial-gradient(1000px 900px at 70% 30%, rgba(70,200,255,.10), transparent 60%),
+    linear-gradient(180deg, #0b1530, #070a16);
 }
 
 .menu-center{
   text-align:center;
-  max-width: 700px;
+  max-width: 760px;
   padding: 24px;
 }
 
 .menu-title{
-  font-size: 48px;
+  font-size: 52px;
   font-weight: 900;
-  letter-spacing: .3px;
+  letter-spacing: .2px;
   display:flex;
   gap: 14px;
   align-items:center;
   justify-content:center;
+  text-shadow: 0 10px 40px rgba(0,0,0,.35);
 }
-
-.menu-title .icon{
-  font-size: 40px;
-  filter: drop-shadow(0 10px 25px rgba(0,0,0,.35));
-}
+.menu-title .icon{ font-size: 42px; }
 
 .menu-subtitle{
   margin: 14px auto 24px;
-  max-width: 520px;
+  max-width: 560px;
   color: var(--muted);
   font-weight: 600;
-  line-height: 1.5;
-  text-shadow: 0 2px 10px rgba(0,0,0,.25);
+  line-height: 1.55;
+  text-shadow: 0 6px 20px rgba(0,0,0,.35);
 }
 
 .start-btn{
   border: none;
   cursor: pointer;
-  padding: 16px 26px;
+  padding: 16px 28px;
   border-radius: 14px;
   background: linear-gradient(180deg, var(--green1), var(--green2));
   color: white;
@@ -83,23 +80,19 @@ canvas{
   display:inline-flex;
   align-items:center;
   gap: 10px;
-  box-shadow: 0 14px 40px rgba(0,0,0,.35), 0 0 0 3px rgba(255,255,255,.08) inset;
+  box-shadow: 0 16px 55px rgba(0,0,0,.42), 0 0 0 3px rgba(255,255,255,.08) inset;
 }
-
-.start-btn:hover{
-  filter: brightness(1.05);
-  box-shadow: 0 18px 50px rgba(0,0,0,.40), 0 0 0 3px rgba(255,255,255,.09) inset, 0 0 30px var(--greenGlow);
-}
+.start-btn:hover{ filter: brightness(1.05); }
 .start-btn:active{ transform: translateY(1px); }
 
 .start-btn .play{
-  background: rgba(255,255,255,.15);
+  background: rgba(255,255,255,.16);
   padding: 6px 10px;
   border-radius: 10px;
   font-weight: 900;
 }
 
-/* HUD */
+/* HUD money pill like screenshot */
 .hidden{ display:none !important; }
 
 #hud{
@@ -126,99 +119,8 @@ canvas{
   border: 1px solid rgba(255,255,255,.18);
 }
 
-#moneyBar .coin{ filter: drop-shadow(0 6px 16px rgba(0,0,0,.35)); }
-
-.shop-btn{
-  pointer-events:auto;
-  position:absolute;
-  right: 18px;
-  top: 18px;
-  background: rgba(0,0,0,.55);
-  color: var(--text);
-  border: 1px solid var(--stroke);
-  border-radius: 12px;
-  padding: 10px 14px;
-  font-weight: 900;
-  cursor:pointer;
-  backdrop-filter: blur(10px);
-}
-.shop-btn:hover{ background: rgba(0,0,0,.68); }
-
-/* SHOP */
-#shop{
-  position:fixed;
-  right: 18px;
-  top: 62px;
-  width: 320px;
-  background: rgba(0,0,0,.62);
-  border: 1px solid var(--stroke);
-  border-radius: 14px;
-  box-shadow: 0 20px 60px rgba(0,0,0,.45);
-  backdrop-filter: blur(10px);
-  overflow:hidden;
-}
-
-.shop-header{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  padding: 12px 12px 10px;
-  border-bottom: 1px solid rgba(255,255,255,.10);
-}
-
-.shop-title{ font-weight: 900; letter-spacing:.2px; }
-.shop-x{
-  border: 1px solid rgba(255,255,255,.16);
-  background: rgba(255,255,255,.08);
-  color: var(--text);
-  border-radius: 10px;
-  padding: 6px 10px;
-  cursor:pointer;
-  font-weight: 900;
-}
-.shop-x:hover{ background: rgba(255,255,255,.12); }
-
-.shop-body{ padding: 12px; display:flex; flex-direction:column; gap: 10px; }
-
-.shop-item{
-  border: 1px solid rgba(255,255,255,.10);
-  background: rgba(0,0,0,.40);
-  border-radius: 12px;
-  padding: 10px;
-}
-
-.shop-name{ font-weight: 900; }
-.shop-desc{ margin-top:4px; color: var(--muted); font-weight:600; font-size: 13px; }
-
-.shop-row{
-  margin-top: 10px;
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap: 10px;
-}
-
-.shop-cost{ font-weight: 900; color: white; }
-.shop-buy{
-  border:none;
-  cursor:pointer;
-  background: linear-gradient(180deg, var(--green1), var(--green2));
-  color: white;
-  font-weight: 900;
-  padding: 8px 12px;
-  border-radius: 10px;
-}
-.shop-buy:hover{ filter: brightness(1.05); }
-
-.shop-hint{
-  margin-top: 2px;
-  color: var(--muted);
-  font-weight: 600;
-  font-size: 13px;
-}
-
-/* Tooltip like screenshot black boxes */
-#tip{
+/* HoverTip small */
+#hoverTip{
   position:fixed;
   pointer-events:none;
   background: rgba(0,0,0,.65);
@@ -226,19 +128,7 @@ canvas{
   border-radius: 10px;
   padding: 10px 12px;
   box-shadow: 0 18px 50px rgba(0,0,0,.45);
-  min-width: 160px;
+  min-width: 170px;
 }
-
-.tip-name{
-  font-weight: 900;
-  margin-bottom: 6px;
-}
-
-.tip-cost{
-  display:inline-block;
-  padding: 6px 10px;
-  border-radius: 8px;
-  background: linear-gradient(180deg, rgba(47,158,68,.95), rgba(43,138,62,.95));
-  color: white;
-  font-weight: 900;
-}
+.hoverTitle{ font-weight: 900; margin-bottom: 4px; }
+.hoverSub{ color: rgba(234,240,255,.75); font-weight: 700; font-size: 12px; }
