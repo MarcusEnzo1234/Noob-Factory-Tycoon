@@ -9,7 +9,7 @@
 <body>
   <canvas id="game"></canvas>
 
-  <!-- MENU (like screenshot) -->
+  <!-- MENU -->
   <div id="menu">
     <div class="menu-center">
       <div class="menu-title">
@@ -20,7 +20,6 @@
         Build your factory empire! Walk onto the glowing purchase buttons to buy buildings.
         Collect the cash they generate and unlock more powerful machines!
       </div>
-
       <button id="startBtn" class="start-btn">
         <span class="play">▶</span>
         <span>START GAME</span>
@@ -34,46 +33,12 @@
       <span class="coin">🪙</span>
       <span id="moneyText">$0</span>
     </div>
-
-    <button id="shopBtn" class="shop-btn">Shop</button>
   </div>
 
-  <!-- SHOP GUI -->
-  <div id="shop" class="hidden">
-    <div class="shop-header">
-      <div class="shop-title">Shop</div>
-      <button id="shopClose" class="shop-x">✕</button>
-    </div>
-
-    <div class="shop-body">
-      <div class="shop-item">
-        <div class="shop-name">Walk Speed</div>
-        <div class="shop-desc">Move faster around your base</div>
-        <div class="shop-row">
-          <div class="shop-cost">$60</div>
-          <button id="buySpeed" class="shop-buy">Buy</button>
-        </div>
-      </div>
-
-      <div class="shop-item">
-        <div class="shop-name">Income Boost</div>
-        <div class="shop-desc">+1 cash per tick (global)</div>
-        <div class="shop-row">
-          <div class="shop-cost">$120</div>
-          <button id="buyBoost" class="shop-buy">Buy</button>
-        </div>
-      </div>
-
-      <div class="shop-hint">
-        Tip: You can also buy by stepping on pads in the world.
-      </div>
-    </div>
-  </div>
-
-  <!-- Hover Tooltip (like screenshot black boxes) -->
-  <div id="tip" class="hidden">
-    <div class="tip-name" id="tipName">Conveyor Belt</div>
-    <div class="tip-cost" id="tipCost">$50</div>
+  <!-- Hover tooltip (small) -->
+  <div id="hoverTip" class="hidden">
+    <div class="hoverTitle" id="hoverTitle">Conveyor Belt</div>
+    <div class="hoverSub" id="hoverSub">Press E to buy</div>
   </div>
 
   <script type="module" src="game.js"></script>
